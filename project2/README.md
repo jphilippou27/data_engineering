@@ -1,4 +1,11 @@
-# A summary
+# Project summary
+- You're a data scientist at a game development company.  
+- Your latest mobile game has two events you're interested in tracking: 
+- `buy a sword` & `join guild`...
+- Each has metadata
+- Goal: instrument your API server to catch and analyze event types.
+
+# Approach outline
 I spun up a cluster with kafka, zookeeper, spark, presto, cloudera/hadoop and the mids container. I added a fancier flask api to collect user info (web session etc.). Then I logged the events to kafka with no end point so the terminal window stayed open and active throughout. Next I used spark to pull events from kafka and filter and flatten and transform them before writing them to  HDFS storage.  Finally I used presto to query the events stored on parquet files. I attempted to get the streaming code working but it failed due to memory shortages that
 I couldn't clear up with limited funds/being under a deadline.
 
