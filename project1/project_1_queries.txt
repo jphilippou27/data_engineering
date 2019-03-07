@@ -1,0 +1,131 @@
+#Gathers the days of the week during which commutes are common
+###############################################################################
+#standardSQL
+SELECT DISTINCT
+  count(*) as count,
+  EXTRACT(DAYOFWEEK FROM (start_date)) AS c_day
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+GROUP BY c_day
+#Output file --> day_of_week.csv
+
+#Figures out what time of day has peak traffic (by hour) for commuter days (excludes Sat & Sun)
+###############################################################################
+#standardSQL
+SELECT DISTINCT
+  count(*) as count,
+  EXTRACT(HOUR FROM (start_date)) AS c_hour,
+  EXTRACT(DAYOFWEEK FROM (start_date)) AS c_day
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 )
+GROUP BY c_hour, c_day
+ORDER by c_hour
+#Output file --> commuter_time_eda.csv
+
+#Gathers the most popular trips (starting and ending station) during peak commute times. Query also builds a tag for AM commute, PM commute and commute trips in general. 
+###############################################################################
+#standardSQL
+SELECT DISTINCT
+  start_station_name,
+  end_station_name,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+ (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+  count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 )
+GROUP BY start_station_name, end_station_name, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> top_commute_trips.csv
+
+#Determine current membership usage & keep AM/PM/commuter flags
+##########################################################################
+#standardSQL
+SELECT DISTINCT subscriber_type,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) 
+GROUP BY subscriber_type, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> subscriber_type.csv
+
+#Subscriber by trip duration (hrs)
+##########################################################3
+#standardSQL
+SELECT round(TIMESTAMP_DIFF(end_date,start_date, HOUR),2) AS trip_duration, 
+  subscriber_type,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) 
+GROUP BY trip_duration, subscriber_type, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> trip_duration_by_subscriber.csv
+
+#Subscriber by trip duration <1hr (15 min)
+###########################################################
+#standardSQL
+SELECT round(TIMESTAMP_DIFF(end_date,start_date, MINUTE),2) AS trip_duration, 
+  subscriber_type,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips` t1
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) and (TIMESTAMP_DIFF(t1.end_date,t1.start_date, MINUTE) <60)
+GROUP BY trip_duration, subscriber_type, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> trip_min_subscriber.csv
+
+
+#Subscriber by day of the week (M-F)
+###########################################################
+#standardSQL
+SELECT DISTINCT subscriber_type,
+  EXTRACT(DAYOFWEEK FROM (start_date)) AS c_day,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) 
+GROUP BY subscriber_type, c_day, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> subscriber_day.csv
+
+
+#Subscriber by zip code
+###########################################################
+#standardSQL
+SELECT DISTINCT subscriber_type,
+  zip_code,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) 
+GROUP BY subscriber_type, zip_code, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#output file --> zip_code.csv
+
+#Subscriber by month
+###########################################################
+#standardSQL
+SELECT DISTINCT subscriber_type,
+  (EXTRACT(MONTH FROM (start_date))) AS month_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 16 and 18) AS PM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) AS AM_trip,
+  (EXTRACT(HOUR FROM (start_date)) between 7 and 9) OR (EXTRACT(HOUR FROM (start_date))  between 16 and 18) AS c_trip,
+ count(*) as trip_count
+FROM `bigquery-public-data.san_francisco.bikeshare_trips`
+WHERE (EXTRACT(DAYOFWEEK FROM (start_date))between 2 and 6 ) 
+GROUP BY subscriber_type, month_trip, PM_trip, AM_trip, c_trip
+ORDER by trip_count desc
+#Output file --> subscriber_month.csv
+
+#Subscriber by trip duration (hrs)
